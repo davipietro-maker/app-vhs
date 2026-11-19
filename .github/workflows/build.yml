@@ -1,0 +1,42 @@
+name: Gerar APK VHS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: Criar base Android do projeto
+        run: flutter create . --platforms=android
+
+      - name: Configurar permissões no AndroidManifest
+        run: |
+          sed -i 's/<application/<uses-permission android:name="android.permission.CAMERA" \/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO" \/>\n    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" \/>\n    <application/' android/app/src/main/AndroidManifest.xml
+
+      - name: Baixar pacotes e compilar APK
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Disponibilizar APK para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-vhs-android
+          path: build/app/outputs/flutter-apk/app-release.apk
